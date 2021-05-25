@@ -3,7 +3,6 @@ require 'test_helper'
 class I18nBackendPluralizationTest < I18n::TestCase
   class Backend < I18n::Backend::Simple
     include I18n::Backend::Pluralization
-    include I18n::Backend::Fallbacks
   end
 
   def setup
@@ -44,7 +43,20 @@ class I18nBackendPluralizationTest < I18n::TestCase
     assert_equal 'one', I18n.t(:count => 1, :default => @entry, :locale => :pirate)
   end
 
-  test "Fallbacks can pick up rules from fallback locales, too" do
-    assert_equal @rule, I18n.backend.send(:pluralizer, :'xx-XX')
+  test "throw message: InvalidPluralizationData message from #translate includes the given entry, count and key" do
+    exception = catch(:exception) do
+      @entry.delete(:one)
+      I18n.t(:count => 1, :default => @entry, :locale => :xx, :throw => true)
+    end
+    assert_equal "translation data {:zero=>\"zero\", :few=>\"few\", :many=>\"many\", :other=>\"other\"} can not be used with :count => 1. key 'one' is missing.", exception.message
+  end
+
+  test "exceptions: InvalidPluralizationData message from #translate includes the given entry, count and key" do
+    begin
+      @entry.delete(:one)
+      I18n.t(:count => 1, :default => @entry, :locale => :xx, :raise => true)
+    rescue I18n::InvalidPluralizationData => exception
+    end
+    assert_equal "translation data {:zero=>\"zero\", :few=>\"few\", :many=>\"many\", :other=>\"other\"} can not be used with :count => 1. key 'one' is missing.", exception.message
   end
 end
